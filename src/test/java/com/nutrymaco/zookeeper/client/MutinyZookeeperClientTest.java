@@ -10,8 +10,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.util.Random;
+
+import static org.junit.Assert.*;
 
 
 public class MutinyZookeeperClientTest {
@@ -21,6 +22,7 @@ public class MutinyZookeeperClientTest {
     private static CuratorFramework curatorFramework;
     private static MutinyZookeeperClient mutinyZkClient;
 
+    private final Random random = new Random();
     @BeforeClass
     public static void startZookeeper() throws InterruptedException {
         container = new GenericContainer<>("zookeeper");
@@ -41,12 +43,24 @@ public class MutinyZookeeperClientTest {
     }
 
     @Test
-    public void oneValueTest() {
-        mutinyZkClient.setValue("/test/path", "test-value")
+    public void testOneValue() {
+        String path = "/test/path/" + random.nextInt();
+        mutinyZkClient.setValue(path, "test-value")
                         .await().indefinitely();
 
-        assertTrue(mutinyZkClient.isExist("/test/path").await().indefinitely());
-        assertEquals(mutinyZkClient.getValue("/test/path").await().indefinitely(), "test-value");
+        assertTrue(mutinyZkClient.isExist(path).await().indefinitely());
+        assertEquals(mutinyZkClient.getValue(path).await().indefinitely(), "test-value");
+    }
+
+    @Test
+    public void testSetCheckDelete() {
+        String path = "/test/path/" + random.nextInt();
+        mutinyZkClient.setValue(path, "test-value")
+                .await().indefinitely();
+        assertTrue(mutinyZkClient.isExist(path).await().indefinitely());
+
+        mutinyZkClient.delete(path).await().indefinitely();
+        assertFalse(mutinyZkClient.isExist(path).await().indefinitely());
     }
 
 }
